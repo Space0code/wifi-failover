@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>local.wifi-failover</string>
+  <key>CFBundleName</key>
+  <string>WiFi Failover</string>
+  <key>CFBundleDisplayName</key>
+  <string>WiFi Failover</string>
+  <key>CFBundleExecutable</key>
+  <string>wifi-failover</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0</string>
+  <key>CFBundleVersion</key>
+  <string>1</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>14.0</string>
+  <!-- background agent: no Dock icon, no menu bar -->
+  <key>LSUIElement</key>
+  <true/>
+  <!-- macOS hides Wi-Fi network names unless the app has Location permission -->
+  <key>NSLocationUsageDescription</key>
+  <string>WiFi Failover needs to see Wi-Fi network names to switch between your iPhone hotspot and known networks like eduroam.</string>
+  <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+  <string>WiFi Failover needs to see Wi-Fi network names to switch between your iPhone hotspot and known networks like eduroam.</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>WiFi Failover needs to see Wi-Fi network names to switch between your iPhone hotspot and known networks like eduroam.</string>
+  <!-- internet check uses Apple's plain-http captive portal probe -->
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSExceptionDomains</key>
+    <dict>
+      <key>captive.apple.com</key>
+      <dict>
+        <key>NSExceptionAllowsInsecureHTTPLoads</key>
+        <true/>
+      </dict>
+    </dict>
+  </dict>
+</dict>
+</plist>
