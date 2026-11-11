@@ -6,6 +6,8 @@
 // requires before CoreWLAN reveals network names. Switching back to a known network is done by
 // power-cycling Wi‑Fi so macOS auto-join reconnects with its own stored credentials (incl. 802.1X
 // for eduroam) — joining a saved network directly needs admin access to the System keychain.
+//
+// Written by Claude.
 
 import AppKit
 import CoreLocation
@@ -117,12 +119,13 @@ func hasInternet() -> Bool {
     let url = URL(string: "http://captive.apple.com/hotspot-detect.html")!
     let sem = DispatchSemaphore(value: 0)
     var ok = false
-    session.dataTask(with: url) { data, resp, _ in
+    let task = session.dataTask(with: url) { data, resp, _ in
         ok = (resp as? HTTPURLResponse)?.statusCode == 200
             && String(decoding: data ?? Data(), as: UTF8.self).contains("Success")
         sem.signal()
-    }.resume()
-    _ = sem.wait(timeout: .now() + 8)
+    }
+    task.resume()
+    if sem.wait(timeout: .now() + 8) == .timedOut { task.cancel(); return false }
     return ok
 }
 
@@ -307,8 +310,11 @@ final class Agent {
                 disconnectedSince = nil
                 lastInternetCheck = now
             } else if now.timeIntervalSince(p.at) >= cfg.switchVerifySec {
-                badUntil[p.target] = now.addingTimeInterval(cfg.badNetworkCooldownSec)
-                event("switch to \"\(p.target)\" didn't give internet — skipping it for \(Int(cfg.badNetworkCooldownSec / 60)) min")
+                // Never got an IP (slow join, flaky signal) → retry soon; got an IP but no internet
+                // (captive portal) → full cooldown. A 30 min skip while offline left us stuck offline.
+                let cooldown = ip == nil ? min(300, cfg.badNetworkCooldownSec) : cfg.badNetworkCooldownSec
+                badUntil[p.target] = now.addingTimeInterval(cooldown)
+                event("switch to \"\(p.target)\" didn't give internet — skipping it for \(Int(cooldown / 60)) min")
                 pending = nil
                 if ip != nil && !onHotspot {
                     // We moved onto a network without internet (e.g. captive portal). Leaving it makes macOS
@@ -424,7 +430,9 @@ guard let agent = Agent() else { log("no Wi‑Fi interface found"); exit(1) }
 log("started (pid \(getpid()), interface \(agent.ifname))")
 Thread {
     while true {
-        agent.tick()
+        // A plain Thread has no run loop draining autoreleased objects; without this pool every tick's
+        // CoreWLAN/JSON/Process temporaries accumulated forever (~125 MB/day).
+        autoreleasepool { agent.tick() }
         Thread.sleep(forTimeInterval: agent.cfg.tickSec)
     }
 }.start()
