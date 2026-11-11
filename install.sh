@@ -1,6 +1,7 @@
 #!/bin/zsh
 # Build WiFiFailover.app, install it to ~/Library/Application Support/wifi-failover and (re)load
 # the LaunchAgent. Usage: ./install.sh ["<hotspot SSID>"]   |   ./install.sh --uninstall
+# Written by Claude.
 set -euo pipefail
 
 LABEL=local.wifi-failover
@@ -75,5 +76,7 @@ cat > "$AGENT" <<EOF
 </plist>
 EOF
 
+# bootout is asynchronous; bootstrapping before the old instance is gone fails with "5: Input/output error"
+for _ in {1..20}; do launchctl print "gui/$UID/$LABEL" &>/dev/null || break; sleep 0.5; done
 launchctl bootstrap "gui/$UID" "$AGENT"
 echo "Installed and started $LABEL. Log: $LOGS/wifi-failover.log"
