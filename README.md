@@ -10,7 +10,8 @@ Keeps the Mac online:
   saved, non-phone network is in range at ≥ −75 dBm, it power-cycles Wi‑Fi so macOS auto-join
   reconnects with its own stored credentials (incl. 802.1X for eduroam). If that network turns out to
   have no internet within 60 s (e.g. a captive portal), it is skipped for 30 min and the agent
-  disconnects from it so macOS falls back to the hotspot.
+  disconnects from it so macOS falls back to the hotspot. If it never even got an IP, it is retried
+  after 5 min instead.
 - **Wi‑Fi without internet for 60 s → hotspot**, but only if the hotspot password is in the keychain
   (see below). Joining a network directly needs its password, and saved ones live in the System
   keychain, which needs admin.
@@ -56,7 +57,7 @@ Re-read every 10 s; missing keys use defaults.
 | `minRSSI` | `-75` | weaker networks are ignored |
 | `hotspotScanSec` | `90` | scan interval while on the hotspot |
 | `noInternetFailoverSec` | `60` | Wi‑Fi without internet → hotspot (needs password) |
-| `badNetworkCooldownSec` | `1800` | skip a network that failed |
+| `badNetworkCooldownSec` | `1800` | skip a network that failed (max 5 min if it never got an IP) |
 | `dryRun` | `false` | log actions without doing them |
 
 ## Optional: hotspot password
@@ -72,3 +73,6 @@ security add-generic-password -s wifi-failover -a "<hotspot SSID>" -w   # prompt
 - Disconnecting from a network (menu › Disconnect, or `disassociate`) makes macOS pause auto-join for
   it, and power cycles don't clear that. Click the network in the Wi‑Fi menu to re-enable it.
 - Turning Wi‑Fi off yourself is respected: the agent does nothing while Wi‑Fi is off.
+
+---
+_Written by Claude._
